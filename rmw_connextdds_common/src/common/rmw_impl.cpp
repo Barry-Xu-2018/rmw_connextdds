@@ -19,6 +19,8 @@
 #include <vector>
 #include <stdexcept>
 
+#include "rmw_dds_common/time_utils.hpp"
+
 #include "rmw_connextdds/graph_cache.hpp"
 
 #define ROS_SERVICE_REQUESTER_PREFIX_STR "rq"
@@ -920,6 +922,31 @@ RMW_Connext_Publisher::assert_liveliness()
   }
 
   return RMW_RET_OK;
+}
+
+rmw_ret_t
+RMW_Connext_Publisher::wait_for_all_acked(rmw_time_t wait_timeout)
+{
+  DDS_Duration_t timeout;
+
+  // TODO(Barry): While rmw_connextdds_duration_from_ros_time() is changed to the public function,
+  // replace below codes.
+  if (rmw_time_equal(wait_timeout, RMW_DURATION_INFINITE)) {
+    timeout = DDS_DURATION_INFINITE;
+  } else {
+    rmw_time_t clamped_time = rmw_dds_common::clamp_rmw_time_to_dds_time(wait_timeout);
+    timeout.sec = static_cast<DDS_Long>(clamped_time.sec);
+    timeout.nanosec = static_cast<DDS_UnsignedLong>(clamped_time.nsec);
+  }
+
+  switch (DDS_DataWriter_wait_for_acknowledgments(this->dds_writer, &timeout)) {
+    case DDS_RETCODE_OK:
+      return RMW_RET_OK;
+    case DDS_RETCODE_TIMEOUT:
+      return RMW_RET_TIMEOUT;
+    default:
+      return RMW_RET_ERROR;
+  }
 }
 
 rmw_ret_t
