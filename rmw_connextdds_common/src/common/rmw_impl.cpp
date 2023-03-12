@@ -3074,6 +3074,14 @@ ros_event_to_dds(const rmw_event_type_t ros, bool * const invalid)
       {
         return DDS_SAMPLE_LOST_STATUS;
       }
+    case RMW_EVENT_PUBLICATION_MATCHED:
+      {
+        return DDS_PUBLICATION_MATCHED_STATUS;
+      }
+    case RMW_EVENT_SUBSCRIPTION_MATCHED:
+      {
+        return DDS_SUBSCRIPTION_MATCHED_STATUS;
+      }
     default:
       {
         if (nullptr != invalid) {
@@ -3131,6 +3139,7 @@ ros_event_for_reader(const rmw_event_type_t ros)
     case RMW_EVENT_REQUESTED_DEADLINE_MISSED:
     case RMW_EVENT_REQUESTED_QOS_INCOMPATIBLE:
     case RMW_EVENT_MESSAGE_LOST:
+    case RMW_EVENT_SUBSCRIPTION_MATCHED:
       {
         return true;
       }
@@ -3180,6 +3189,14 @@ RMW_Connext_SubscriberStatusCondition::get_status(
         rc = this->get_message_lost_status(status);
         break;
       }
+    case RMW_EVENT_SUBSCRIPTION_MATCHED:
+      {
+        rmw_matched_status_t * const status =
+          reinterpret_cast<rmw_matched_status_t *>(event_info);
+
+        rc = this->get_matched_status(status);
+        break;
+      }
     default:
       {
         RMW_CONNEXT_LOG_ERROR_A_SET(
@@ -3221,6 +3238,14 @@ RMW_Connext_PublisherStatusCondition::get_status(
           reinterpret_cast<rmw_offered_qos_incompatible_event_status_t *>(event_info);
 
         rc = this->get_offered_qos_incompatible_status(status);
+        break;
+      }
+    case RMW_EVENT_PUBLICATION_MATCHED:
+      {
+        rmw_matched_status_t * status =
+          reinterpret_cast<rmw_matched_status_t *>(event_info);
+
+        rc = this->get_matched_status(status);
         break;
       }
     default:
